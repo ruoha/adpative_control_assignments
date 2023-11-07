@@ -1,0 +1,69 @@
+clc;
+clear all;
+
+m = 2;
+d = 4;
+k = 200;
+w = 15;
+wr = 3000;
+wa = 4000;
+zeta = 0.01;
+
+%% assignment 1.2b
+A = [0 1;
+    -k/m -d/m];
+
+B = [0; 1/m];
+
+C = [1 0];
+
+D = 0;
+
+W = [0 w;
+    -w 0;];
+
+V = [0 -1];
+
+% State-space description of the observer for the state and disturbance:
+% [x_hat_dot; xi_hat_dot] = A_ob_sd * [x_hat; xi_hat] + B_ob_sd * u + [Lx; Ld] * (y - y_hat);
+% [y_hat; d_hat] = C_ob_sd * [x_hat; xi_hat];
+
+A_ob_sd = [A B*V;
+           zeros(2, 2) W];
+
+B_ob_sd = [B;
+           zeros(2, 1)];
+
+C_ob_sd = [C zeros(1, 2);
+           zeros(1, 2) V];
+
+syms s;
+P = (1 / (m * s^2 + d * s + k)) * ((wr^2 * (s^2 + 2 * zeta * wa * s + wa^2)) / (wa^2 * (s^2 + 2 * zeta * wr * s + wr^2)));
+
+% Extract the numerator and denominator
+[num, den] = numden(P);
+
+% Convert to state-space representation
+[A2, B2, C2, D2] = tf2ss(sym2poly(num), sym2poly(den));
+
+%% Question 2.c
+% Define the system matrices A_e, B_e, and C_e
+% Define the system matrices A_e, B_e, and C_e
+n = 10; % Number of desired poles
+A_e = A_ob_sd;
+B_e = B_ob_sd;
+C_e = C_ob_sd; % Include the measurement output
+
+% Define the desired pole locations
+desired_poles = zeros(1, 2 * n);
+for k = 1:n
+    desired_poles(2 * k - 1) = 800 * exp(1i * ((2 * k * pi) / (2 * n) + ((n - 1) * pi) / (2 * n)));
+end
+
+% Calculate the learning matrix L to place the poles
+L = place(A_e, B_e, desired_poles);
+
+% Display the calculated learning matrix
+disp('Learning Matrix L:');
+disp(L);
+
